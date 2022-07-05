@@ -1,3 +1,4 @@
 Hello world
 Testing committing multiple files through GitHub
 Wish me luck!
+Testing committing messages through VScode
