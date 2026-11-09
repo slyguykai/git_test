@@ -2,52 +2,60 @@
 
 ## Overview
 
-Clone of **xCreate - AI Image Generator**, a state-of-the-art local AI image generation app for macOS. The app runs Stable Diffusion and FLUX models natively on Apple Silicon with complete privacy (no data leaves the device).
+Clone of **xCreate - AI Image Generator** by **Ashraf Samy** (App Store ID: 6756119462), a state-of-the-art local AI image generation app for macOS. The app runs AI models natively on Apple Silicon with complete privacy (no data leaves the device).
+
+**Original App Details:**
+- **Developer:** Ashraf Samy
+- **Released:** December 14, 2025 (v1.0)
+- **Current Version:** 1.1.2 (January 27, 2026)
+- **Requirements:** macOS 15.0+, Apple M1 chip or later
+- **Pricing:** Free tier + Pro subscription (~$10/month)
 
 ---
 
-## Core Features to Implement
+## Core Features to Implement (Based on Actual xCreate)
 
 ### 1. Text-to-Image Generation
 - User enters a text prompt describing the desired image
 - AI model generates images based on the prompt
-- Support for positive and negative prompts
-- Real-time generation progress indicator
+- **Live Preview** feature (added in v1.1.0) - see generation progress in real-time
+- Asynchronous generation (non-blocking UI)
 
-### 2. Image-to-Image Transformation
-- Upload/drag-drop existing image as starting point
-- Apply AI transformations based on text prompts
-- Control denoising strength/influence of original image
+### 2. Model Management
+- **Models Section** for managing AI models
+- Select location of existing local models (folder picker)
+- Download models directly from **Hugging Face** within the app
+- **Top Menu Bar** model selector - switch models before generating
+- Support for multiple model formats
 
-### 3. Inpainting & Outpainting
-- Select areas of image to regenerate (inpainting)
-- Extend images beyond original boundaries (outpainting)
-- Brush tool for mask creation
+### 3. Supported AI Models (Actual xCreate Models)
+| Model | Type | Notes |
+|-------|------|-------|
+| **GLM-Image** | CogView-based | Chinese AI model |
+| **Z-Image-Turbo** | Fast generation | Optimized for speed |
+| **Flux.2-klein-4B** | FLUX variant | 4B parameter model |
+| **Qwen-Image-2512** | Qwen-based | Added in v1.1.1 |
 
-### 4. Model Management
-- Download models directly within app
-- Switch between different models (SD 1.5, SDXL, FLUX)
-- Custom model import (safetensors, ckpt)
-- Model memory offloading for large models
+### 4. Generation Queue System
+- **Free Tier:** Single generation queue
+- **Pro Tier:** Multiple queued generations
+- Queue management UI
+- Cancel/pause generation
 
-### 5. Advanced Generation Settings
-- **Steps**: Number of diffusion steps (1-150)
-- **Guidance Scale (CFG)**: How closely to follow prompt (1-30)
-- **Seed**: Reproducible generation with specific seeds
-- **Scheduler**: Different sampling methods (Euler, DPM++, etc.)
-- **Image Size**: Width/height customization
-- **Batch Size**: Generate multiple images at once
+### 5. Variations System
+- Generate multiple variations per prompt
+- **Free Tier:** Limited variations (2 per prompt)
+- **Pro Tier:** Unlimited variations ("trillions")
 
-### 6. Image Gallery & History
-- View all generated images
-- Metadata stored with each image (prompt, settings, model)
-- Favorite/organize images
-- Export in various formats (PNG, JPEG, WebP)
+### 6. Watermark System
+- **Free Tier:** Watermark on generated images
+- **Pro Tier:** No watermark
 
 ### 7. Privacy & Local Processing
 - 100% offline operation
 - No data sent to servers
-- All models run locally via Core ML
+- All AI processing happens on-device
+- No data collection (per App Store privacy label)
 
 ---
 
@@ -59,12 +67,11 @@ Clone of **xCreate - AI Image Generator**, a state-of-the-art local AI image gen
 |-----------|------------|
 | Language | Swift 5.9+ |
 | UI Framework | SwiftUI |
-| ML Runtime | Core ML, Metal Performance Shaders |
-| Model Format | Core ML (.mlmodelc), converted from PyTorch |
-| Diffusion Library | Apple's ml-stable-diffusion or swift-diffusers |
-| Minimum macOS | 13.1+ (Ventura) |
-| Hardware | Apple Silicon (M1/M2/M3/M4) required |
-| RAM Requirement | 16GB minimum, 24GB+ for FLUX |
+| ML Runtime | Core ML, Metal Performance Shaders, MLX |
+| Model Format | safetensors, GGUF, Core ML (.mlmodelc) |
+| Minimum macOS | **15.0+ (Sequoia)** |
+| Hardware | **Apple Silicon (M1/M2/M3/M4) required** |
+| RAM Requirement | 16GB minimum, 24GB+ recommended |
 
 ### Project Structure
 
@@ -74,39 +81,49 @@ xCreateClone/
 ├── xCreateClone/
 │   ├── App/
 │   │   ├── xCreateCloneApp.swift          # App entry point
-│   │   └── AppState.swift                  # Global app state
+│   │   ├── AppState.swift                  # Global app state
+│   │   └── AppDelegate.swift               # Menu bar integration
 │   │
 │   ├── Views/
 │   │   ├── MainView.swift                  # Main window layout
-│   │   ├── Sidebar/
-│   │   │   ├── SidebarView.swift           # Navigation sidebar
-│   │   │   └── ModelSelectorView.swift     # Model picker
+│   │   ├── MenuBar/
+│   │   │   └── ModelMenuBarView.swift      # Top menu model selector
+│   │   ├── Models/
+│   │   │   ├── ModelsView.swift            # Models section
+│   │   │   ├── ModelBrowserView.swift      # Browse local models
+│   │   │   ├── HuggingFaceDownloadView.swift # HF download UI
+│   │   │   └── ModelRowView.swift          # Individual model row
 │   │   ├── Generation/
 │   │   │   ├── PromptInputView.swift       # Text prompt input
-│   │   │   ├── GenerationSettingsView.swift # Advanced settings
-│   │   │   ├── ImagePreviewView.swift      # Generated image display
-│   │   │   └── ProgressView.swift          # Generation progress
+│   │   │   ├── LivePreviewView.swift       # Real-time preview
+│   │   │   ├── GenerationQueueView.swift   # Queue management
+│   │   │   └── VariationsView.swift        # Variation selector
 │   │   ├── Gallery/
 │   │   │   ├── GalleryView.swift           # Image grid
 │   │   │   └── ImageDetailView.swift       # Full image view
-│   │   ├── ImageEditor/
-│   │   │   ├── InpaintingView.swift        # Inpainting canvas
-│   │   │   └── BrushToolView.swift         # Mask painting
 │   │   └── Settings/
 │   │       ├── SettingsView.swift          # App preferences
-│   │       └── ModelManagerView.swift      # Model downloads
+│   │       └── SubscriptionView.swift      # Pro upgrade
 │   │
 │   ├── Models/
 │   │   ├── GenerationRequest.swift         # Generation parameters
 │   │   ├── GeneratedImage.swift            # Image + metadata
 │   │   ├── AIModel.swift                   # Model info
-│   │   └── AppSettings.swift               # User preferences
+│   │   ├── GenerationQueue.swift           # Queue state
+│   │   └── Subscription.swift              # Pro tier state
 │   │
 │   ├── Services/
-│   │   ├── DiffusionService.swift          # Core ML pipeline
-│   │   ├── ModelManager.swift              # Download/load models
-│   │   ├── ImageStorage.swift              # Save/load images
-│   │   └── MetadataService.swift           # Image metadata
+│   │   ├── ImageGenerationService.swift    # Core generation pipeline
+│   │   ├── ModelManager.swift              # Load/manage models
+│   │   ├── HuggingFaceService.swift        # HF API integration
+│   │   ├── QueueManager.swift              # Generation queue
+│   │   ├── WatermarkService.swift          # Apply/remove watermark
+│   │   └── ImageStorage.swift              # Save/load images
+│   │
+│   ├── MLBackends/
+│   │   ├── MLXBackend.swift                # MLX inference
+│   │   ├── CoreMLBackend.swift             # Core ML inference
+│   │   └── ModelConverter.swift            # Format conversion
 │   │
 │   ├── Utilities/
 │   │   ├── Extensions/
@@ -115,7 +132,7 @@ xCreateClone/
 │   │
 │   └── Resources/
 │       ├── Assets.xcassets
-│       └── Models/                          # Bundled/downloaded models
+│       └── Localizations/
 │
 ├── Packages/
 │   └── Dependencies via SPM
@@ -125,76 +142,168 @@ xCreateClone/
 
 ---
 
+## UI Design (Based on Actual xCreate)
+
+### Main Window Layout
+
+Based on the App Store description, xCreate has:
+1. **Models Section** - For selecting/downloading models
+2. **Top Menu Bar** - Model selector dropdown
+3. **Prompt Area** - Text input for generation
+4. **Live Preview** - Real-time generation progress
+5. **Queue Indicator** - Shows queued generations
+
+```
++------------------------------------------------------------------+
+|  [xCreate Clone]  [Model: Flux.2-klein ▼]              [_] [□] [X] |
++------------------------------------------------------------------+
+|                                                                    |
+|  +------------------+  +--------------------------------------+   |
+|  |                  |  |                                      |   |
+|  |  Models Section  |  |         Live Preview Area            |   |
+|  |                  |  |                                      |   |
+|  |  ○ GLM-Image     |  |    +------------------------+       |   |
+|  |  ○ Z-Image-Turbo |  |    |                        |       |   |
+|  |  ● Flux.2-klein  |  |    |   [Generation Preview] |       |   |
+|  |  ○ Qwen-Image    |  |    |                        |       |   |
+|  |                  |  |    +------------------------+       |   |
+|  |  [+ Add Model]   |  |                                      |   |
+|  |  [↓ Download]    |  |    Progress: ████████░░ 80%         |   |
+|  |                  |  |                                      |   |
+|  +------------------+  +--------------------------------------+   |
+|                                                                    |
+|  Prompt: [A serene mountain landscape at sunset...              ] |
+|                                                                    |
+|  Variations: [2 ▼]  Queue: [1/1]           [  Generate  ⌘↵  ]    |
+|                                                                    |
++------------------------------------------------------------------+
+|  Queue: Idle                               [FREE] Upgrade to Pro  |
++------------------------------------------------------------------+
+```
+
+### Key UI Elements
+
+1. **Top Menu Bar Model Selector**
+   - Dropdown in the app's menu bar area
+   - Shows currently selected model
+   - Quick switch between loaded models
+
+2. **Models Section (Sidebar)**
+   - List of available models
+   - Radio button selection
+   - Download status indicators
+   - "Add Model" button (folder picker)
+   - "Download" button (Hugging Face browser)
+
+3. **Live Preview**
+   - Shows generation progress visually
+   - Updates in real-time as image forms
+   - Final image display when complete
+
+4. **Generation Controls**
+   - Prompt text field
+   - Variations selector (limited in free tier)
+   - Queue indicator
+   - Generate button
+
+5. **Status Bar**
+   - Queue status
+   - Subscription tier indicator
+   - Upgrade prompt for free users
+
+---
+
+## Pricing/Subscription Implementation
+
+### Free Tier
+```swift
+struct FreeTier {
+    let maxVariationsPerPrompt = 2
+    let maxConcurrentQueue = 1
+    let hasWatermark = true
+    let unlimitedPrompts = true
+}
+```
+
+### Pro Tier (~$10/month)
+```swift
+struct ProTier {
+    let maxVariationsPerPrompt = Int.max  // "Trillions"
+    let maxConcurrentQueue = 10           // Multiple queued
+    let hasWatermark = false
+    let unlimitedPrompts = true
+}
+```
+
+### StoreKit Integration
+- Use StoreKit 2 for subscriptions
+- Monthly auto-renewable subscription
+- Restore purchases support
+- Receipt validation
+
+---
+
 ## Implementation Phases
 
-### Phase 1: Foundation (Week 1-2)
+### Phase 1: Foundation (Week 1)
 1. **Project Setup**
-   - Create Xcode project with SwiftUI lifecycle
-   - Configure for macOS 13.1+ and Apple Silicon
+   - Create Xcode project targeting macOS 15.0+
+   - Configure for Apple Silicon only
    - Set up Swift Package Manager dependencies
-   - Configure app entitlements (file access, network)
+   - Configure app entitlements
 
-2. **Core ML Integration**
-   - Integrate Apple's ml-stable-diffusion Swift package
-   - Set up model loading infrastructure
-   - Implement basic text-to-image pipeline
-   - Test with SD 1.5 model
+2. **Model Infrastructure**
+   - Model discovery (scan local folders)
+   - Model metadata parsing
+   - Hugging Face API client for downloads
 
-### Phase 2: Core UI (Week 2-3)
-3. **Main Interface**
-   - Three-column layout (sidebar, canvas, settings)
-   - Prompt input with positive/negative fields
-   - Generate button with keyboard shortcut
-   - Image preview area with zoom/pan
+### Phase 2: Core Generation (Week 2)
+3. **ML Backend**
+   - Integrate MLX for model inference
+   - Support for safetensors/GGUF formats
+   - Basic text-to-image pipeline
+   - Test with Flux.2-klein-4B
 
-4. **Generation Settings Panel**
-   - Steps slider (1-150)
-   - Guidance scale slider (1-30)
-   - Seed input (random/manual)
-   - Scheduler dropdown
-   - Image dimensions picker
-   - Batch size selector
+4. **Live Preview**
+   - Step-by-step generation callback
+   - Real-time image preview updates
+   - Progress indicator
 
-### Phase 3: Model System (Week 3-4)
-5. **Model Management**
-   - Model browser with thumbnails
-   - Download manager with progress
-   - Model switching without restart
-   - Custom model import
-   - Memory optimization (model offloading)
+### Phase 3: UI Implementation (Week 3)
+5. **Main Interface**
+   - Models section sidebar
+   - Top menu bar model selector
+   - Prompt input area
+   - Live preview canvas
 
-6. **Support Multiple Model Types**
-   - Stable Diffusion 1.5
-   - Stable Diffusion 2.1
-   - SDXL
-   - FLUX (if RAM permits)
+6. **Model Management UI**
+   - Local folder browser
+   - Hugging Face download interface
+   - Download progress tracking
+   - Model switching
 
-### Phase 4: Advanced Features (Week 4-5)
-7. **Image-to-Image**
-   - Image input via drag-drop
-   - Denoising strength control
-   - Reference image preview
+### Phase 4: Queue & Variations (Week 4)
+7. **Generation Queue**
+   - Queue data structure
+   - Sequential processing
+   - Queue UI (status, cancel)
 
-8. **Inpainting/Outpainting**
-   - Brush tool for mask painting
-   - Eraser and fill tools
-   - Outpaint direction controls
-   - Mask visualization
+8. **Variations System**
+   - Multiple image generation
+   - Variation grid display
+   - Free tier limits
 
-### Phase 5: Gallery & Polish (Week 5-6)
-9. **Image Gallery**
-   - Grid view of generated images
-   - Metadata display
-   - Search/filter by prompt
-   - Favorite system
-   - Batch export
+### Phase 5: Monetization & Polish (Week 5)
+9. **Subscription System**
+   - StoreKit 2 integration
+   - Pro tier unlocks
+   - Watermark system
 
 10. **Final Polish**
     - Keyboard shortcuts
-    - Menu bar integration
-    - Dark/light mode
+    - Error handling
     - Performance optimization
-    - Error handling & recovery
+    - App Store preparation
 
 ---
 
@@ -205,73 +314,28 @@ xCreateClone/
 ```swift
 // Package.swift dependencies
 dependencies: [
-    // Apple's Stable Diffusion implementation
-    .package(url: "https://github.com/apple/ml-stable-diffusion", from: "1.0.0"),
-
-    // Or Hugging Face's Swift Diffusers
+    // MLX for Apple Silicon ML inference
+    .package(url: "https://github.com/ml-explore/mlx-swift", from: "0.10.0"),
+    
+    // Hugging Face Hub API
     .package(url: "https://github.com/huggingface/swift-transformers", from: "0.1.0"),
-
+    
     // Image handling
     .package(url: "https://github.com/SDWebImage/SDWebImageSwiftUI", from: "2.0.0"),
-
-    // File management
+    
+    // File/archive management
     .package(url: "https://github.com/weichsel/ZIPFoundation", from: "0.9.0"),
 ]
 ```
 
-### Model Sources
+### Model Sources (Hugging Face)
 
-| Model | Size | Source |
-|-------|------|--------|
-| SD 1.5 | ~5GB | Hugging Face (Core ML converted) |
-| SD 2.1 | ~5GB | Hugging Face |
-| SDXL | ~12GB | Hugging Face |
-| FLUX Dev | ~13.6GB | Hugging Face |
-
----
-
-## UI Design Specifications
-
-### Main Window Layout
-
-```
-+------------------------------------------------------------------+
-|  [App Menu]                                          [_] [□] [X] |
-+------------------------------------------------------------------+
-|        |                                    |                    |
-| Models |       Image Preview               |   Generation       |
-|  [v]   |                                    |   Settings         |
-|        |   +------------------------+      |                    |
-| SD 1.5 |   |                        |      | Steps: [====] 30   |
-| SD 2.1 |   |                        |      | CFG:   [===] 7.5   |
-| SDXL   |   |    Generated Image     |      | Seed:  [Random]    |
-| FLUX   |   |                        |      | Size:  512x512     |
-|        |   |                        |      | Scheduler: [Euler] |
-+--------+   +------------------------+      | Batch: 1           |
-|        |                                    |                    |
-| Recent |   Prompt:                          +--------------------+
-| Images |   [Beautiful sunset over ocean... ]                    |
-|        |                                                         |
-| [img1] |   Negative:                                            |
-| [img2] |   [blurry, low quality, deformed...]                   |
-| [img3] |                                                         |
-|        |   [       Generate (⌘G)        ]                       |
-+--------+---------------------------------------------------------+
-```
-
-### Color Scheme
-
-- **Dark Mode** (default):
-  - Background: #1E1E1E
-  - Surface: #2D2D2D
-  - Accent: #007AFF (macOS blue)
-  - Text: #FFFFFF
-
-- **Light Mode**:
-  - Background: #F5F5F5
-  - Surface: #FFFFFF
-  - Accent: #007AFF
-  - Text: #000000
+| Model | HF Repo | Size |
+|-------|---------|------|
+| GLM-Image | THUDM/CogView or similar | ~10GB |
+| Z-Image-Turbo | Various | ~4-6GB |
+| Flux.2-klein-4B | black-forest-labs/FLUX.1-schnell variants | ~8GB |
+| Qwen-Image-2512 | Qwen/Qwen-VL variants | ~10GB |
 
 ---
 
@@ -279,21 +343,18 @@ dependencies: [
 
 ### GenerationRequest
 ```swift
-struct GenerationRequest: Codable {
+struct GenerationRequest: Codable, Identifiable {
     let id: UUID
     let prompt: String
-    let negativePrompt: String?
-    let steps: Int              // 1-150
-    let guidanceScale: Double   // 1.0-30.0
-    let seed: UInt32?           // nil = random
-    let width: Int              // 256-2048
-    let height: Int             // 256-2048
-    let scheduler: Scheduler
     let modelId: String
-    let batchSize: Int          // 1-4
-    let inputImage: Data?       // For img2img
-    let mask: Data?             // For inpainting
-    let denoisingStrength: Double? // 0.0-1.0
+    let variationCount: Int      // Limited in free tier
+    let timestamp: Date
+    
+    // Generation will determine these based on model
+    var width: Int?
+    var height: Int?
+    var steps: Int?
+    var seed: UInt64?
 }
 ```
 
@@ -301,39 +362,38 @@ struct GenerationRequest: Codable {
 ```swift
 struct GeneratedImage: Codable, Identifiable {
     let id: UUID
+    let requestId: UUID
+    let variationIndex: Int
     let imageData: Data
     let thumbnailData: Data
-    let request: GenerationRequest
+    let prompt: String
+    let modelId: String
     let generatedAt: Date
     let generationTime: TimeInterval
-    var isFavorite: Bool
-    var tags: [String]
+    var hasWatermark: Bool
 }
 ```
 
----
-
-## Performance Considerations
-
-### Memory Management
-- Load only one model at a time
-- Implement model unloading when switching
-- Use memory-mapped files for large models
-- Stream model chunks for FLUX
-
-### Generation Optimization
-- Use Metal Performance Shaders
-- Enable ANE (Apple Neural Engine) when available
-- Implement generation queue for batch processing
-- Show progress per step
-
-### Expected Performance (M1/M2/M3)
-
-| Model | Resolution | Steps | Time |
-|-------|------------|-------|------|
-| SD 1.5 | 512x512 | 30 | ~10-15s |
-| SDXL | 1024x1024 | 30 | ~45-60s |
-| FLUX | 704x704 | 25 | ~5-6min |
+### AIModel
+```swift
+struct AIModel: Codable, Identifiable {
+    let id: String
+    let name: String
+    let type: ModelType          // GLM, FLUX, Qwen, etc.
+    let localPath: URL?
+    let huggingFaceRepo: String?
+    let sizeBytes: Int64
+    var isDownloaded: Bool
+    var isSelected: Bool
+    
+    enum ModelType: String, Codable {
+        case glmImage = "GLM-Image"
+        case zImageTurbo = "Z-Image-Turbo"
+        case flux2Klein = "Flux.2-klein-4B"
+        case qwenImage = "Qwen-Image-2512"
+    }
+}
+```
 
 ---
 
@@ -342,7 +402,8 @@ struct GeneratedImage: Codable, Identifiable {
 ```xml
 <!-- xCreateClone.entitlements -->
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "...">
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" 
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
     <key>com.apple.security.app-sandbox</key>
@@ -353,9 +414,25 @@ struct GeneratedImage: Codable, Identifiable {
     <true/>
     <key>com.apple.security.network.client</key>
     <true/>
+    <!-- For StoreKit -->
+    <key>com.apple.developer.storekit.configuration</key>
+    <true/>
 </dict>
 </plist>
 ```
+
+---
+
+## Version History Matching
+
+To match xCreate's feature rollout:
+
+| Version | Features |
+|---------|----------|
+| 1.0 | Basic generation, model management |
+| 1.1.0 | Live preview, Qwen-Image-2512, async generation |
+| 1.1.1 | FLUX.2-klein-4B, GLM-Image support |
+| 1.1.2 | Bug fixes, stability |
 
 ---
 
@@ -363,68 +440,34 @@ struct GeneratedImage: Codable, Identifiable {
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Large model downloads | Poor UX | Resume support, progress indication |
-| Memory constraints | Crashes | Model size warnings, graceful degradation |
-| Slow generation | User frustration | Progress per step, cancel support |
-| Core ML compatibility | Limited models | Focus on well-tested conversions |
-| App Store rejection | Distribution issues | Offer direct download alternative |
-
----
-
-## Testing Strategy
-
-### Unit Tests
-- Model loading/unloading
-- Parameter validation
-- Image storage/retrieval
-
-### Integration Tests
-- Full generation pipeline
-- Model switching
-- Gallery operations
-
-### Performance Tests
-- Memory usage monitoring
-- Generation time benchmarks
-- Cold/warm start times
-
-### Manual Testing
-- Various prompt types
-- Edge cases (very long prompts, special characters)
-- Hardware configurations (different M-series chips)
-
----
-
-## Future Enhancements (Post-MVP)
-
-1. **ControlNet Support** - Guide generation with pose/edge detection
-2. **LoRA Support** - Fine-tuned style models
-3. **Upscaling** - AI-powered image upscaling
-4. **Animation** - Generate image sequences
-5. **Plugins** - Extensible architecture
-6. **Cloud Sync** - iCloud gallery sync (optional)
-7. **iOS Companion** - iPhone/iPad version
+| Model format compatibility | Can't load models | Support multiple formats, provide converters |
+| Large model downloads | Poor UX, storage | Resume support, storage warnings |
+| Memory constraints | Crashes on 8GB Macs | Minimum 16GB, model size warnings |
+| App Store IAP review | Rejection | Follow StoreKit guidelines strictly |
+| Model licensing | Legal issues | Only support open-source models |
 
 ---
 
 ## Sources & References
 
-- [xCreate Official](https://xcreate.com/) - Original app
-- [Apple ml-stable-diffusion](https://github.com/apple/ml-stable-diffusion) - Core ML implementation
-- [Swift Diffusers (Hugging Face)](https://huggingface.co/blog/fast-mac-diffusers) - Alternative Swift implementation
-- [DiffusionBee](https://diffusionbee.com/) - Reference macOS app
-- [FLUX on Mac Guide](https://stable-diffusion-art.com/flux-mac/) - FLUX model setup
-- [Core ML Stable Diffusion Tutorial](https://www.createwithswift.com/generating-images-with-stable-diffusion-on-apple-silicon-with-core-ml/)
+- [xCreate App Store](https://apps.apple.com/us/app/xcreate-ai-image-generator/id6756119462?mt=12) - Official listing
+- [xCreate Official Site](https://xcreate.com/) - Developer website
+- [MLX Swift](https://github.com/ml-explore/mlx-swift) - Apple's ML framework
+- [Hugging Face](https://huggingface.co/) - Model repository
+- [macOS AI Apps](https://www.macaiapps.com/category/image-generation/) - Category reference
 
 ---
 
 ## Summary
 
-This plan outlines a 1:1 clone of xCreate with:
-- **Native macOS app** using Swift/SwiftUI
-- **Local AI generation** via Core ML (100% private)
-- **Multiple model support** (SD 1.5, SDXL, FLUX)
-- **Full feature set**: text-to-image, img2img, inpainting
-- **Professional UI** with gallery and settings
+This plan outlines a **1:1 clone** of xCreate based on **verified information** from the App Store and web research:
 
-The app prioritizes privacy, performance on Apple Silicon, and a polished user experience matching or exceeding the original xCreate.
+- **Native macOS 15.0+ app** using Swift/SwiftUI
+- **Apple Silicon only** (M1/M2/M3/M4)
+- **Actual supported models**: GLM-Image, Z-Image-Turbo, Flux.2-klein-4B, Qwen-Image-2512
+- **Live Preview** for real-time generation progress
+- **Hugging Face integration** for model downloads
+- **Freemium model**: Free tier with limits, Pro subscription (~$10/mo)
+- **100% local/private** - no cloud processing
+
+The app matches xCreate's actual feature set as documented in the App Store listing and version history.
